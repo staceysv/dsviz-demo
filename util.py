@@ -151,6 +151,15 @@ class ExampleSegmentationModel:
 def iou(mask_a, mask_b, class_id):
     return np.nan_to_num(((mask_a == class_id) & (mask_b == class_id)).sum(axis=(1,2)) / ((mask_a == class_id) | (mask_b == class_id)).sum(axis=(1,2)), 0, 0, 0)
 
+# 2D version
+def iou_flat(mask_a, mask_b, class_id):
+    intersection = np.nan_to_num(((mask_a == class_id) & (mask_b == class_id)).sum(axis=(0,1)), 0, 0, 0)
+    union = np.nan_to_num(((mask_a == class_id) | (mask_b == class_id)).sum(axis=(0,1)), 0, 0, 0)
+    if np.isclose(union, 0):
+      return np.nan_to_num(0.0, 0.0, 0.0, 0.0)
+    else:
+      return np.nan_to_num(intersection / union, 0.0, 0.0, 0.0)
+
 def score_model(model, x_data, mask_data, n_classes):
     results = model.predict(x_data)
     return np.array([iou(results, mask_data, i) for i in BDD_IDS]).T, results
