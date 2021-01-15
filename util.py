@@ -25,6 +25,9 @@ labels_dir = os.path.join(bdd_dir, 'labels', 'train')
 
 train_ids = None
 
+# total number of pixels in each training image
+TOTAL_PIXELS = float(720*1280)
+
 def download_data():
     global train_ids
     if not os.path.exists("bdd100k.tgz"):
@@ -161,3 +164,24 @@ def make_datasets(data_table, n_classes):
     train_data = np.array([np.array(data_table.data[i][1]._image).reshape(height, width, 3) for i in range(n_samples)])
     mask_data = np.array([np.array(data_table.data[i][3]._image).reshape(height, width) for i in range(n_samples)])
     return train_data, mask_data
+
+# create a static 20-color mask from a label file
+def static_label(label_file, train_id, rootdir="tmp_labels"):
+    label_img = np.uint8(np.array(Image.open(label_file)))
+    tmp_label = rootdir + "/label_" + train_id + ".png"
+    plt.imsave(tmp_label, label_img, cmap="tab20")
+    return wandb.Image(tmp_label)
+
+# return the fraction of image pixels corresponding to a particular class (or all classes by default)
+def count_pixels(label_file, class_id=None):
+    np_img = np.array(Image.open(label_file))
+    if class_id:
+        return float(np.bincount(np_img.astype(int).flatten(), minlength=20)[class_id]) / TOTAL_PIXELS
+    else:
+        return [float(p) / TOTAL_PIXELS for p in np.bincount(np_img.astype(int).flatten(), minlength=20)]
+
+# fraction of pixels which are humans (person + rider class)
+def count_humans(label_file):
+    np_img = np.array(Image.open(label_file))
+    counts = np.bincount(np_img.astype(int).flatten(), minlength=20)
+    return float(counts[11] + counts[12]) / TOTAL_PIXELS
